@@ -8,7 +8,8 @@ const UserSession = sequelize.define('UserSession', {
     phone: { type: DataTypes.STRING, allowNull: false },
     stage: { type: DataTypes.STRING, defaultValue: 'START' },
     cart: { type: DataTypes.JSON, defaultValue: [] },
-    tempMenuMap: { type: DataTypes.JSON, defaultValue: [] }
+    tempMenuMap: { type: DataTypes.JSON, defaultValue: [] },
+    tempName: { type: DataTypes.STRING }
 }, {
     indexes: [
         {

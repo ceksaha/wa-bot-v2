@@ -127,28 +127,40 @@ const handleIncomingMessage = async (from, text, tenantId) => {
                 total += item.price * item.qty;
                 summary += `${index + 1}. ${item.name} x${item.qty} = Rp ${(item.price * item.qty).toLocaleString()}\n`;
             });
-            summary += `\n*TOTAL: Rp ${total.toLocaleString()}*\n\nKirim *Alamat Lengkap* Anda:`;
-            await session.update({ stage: 'ASKING_ADDRESS' });
+            summary += `\n*TOTAL: Rp ${total.toLocaleString()}*\n\nSiapa *Nama Lengkap* Anda?`;
+            await session.update({ stage: 'ASKING_NAME' });
             return summary;
         }
         return "⚠️ Pilih 1 atau 2.";
     }
 
+    if (session.stage === 'ASKING_NAME') {
+        const name = text.trim();
+        if (name.length < 2) return "⚠️ Mohon masukkan Nama Lengkap yang valid.";
+        
+        await session.update({ tempName: name, stage: 'ASKING_ADDRESS' });
+        return `Halo *${name}*, sekarang kirimkan *Alamat Lengkap* pengiriman Anda:`;
+    }
+
     if (session.stage === 'ASKING_ADDRESS') {
+        const address = text.trim();
+        if (address.length < 5) return "⚠️ Mohon masukkan Alamat Lengkap yang jelas.";
+
         let total = 0;
         cart.forEach(item => total += item.price * item.qty);
 
         const newOrder = await Order.create({
             tenant_id: tenantId,
+            customer_name: session.tempName || 'Pelanggan',
             customer_phone: from,
             items: cart,
             total_price: total,
-            address: text,
+            address: address,
             status: 'pending'
         });
 
-        await session.update({ stage: 'START', cart: [] });
-        return `✅ *PESANAN BERHASIL!* ✅\n\nID Order: #${newOrder.id}\nTotal: *Rp ${total.toLocaleString()}*\nAlamat: ${text}`;
+        await session.update({ stage: 'START', cart: [], tempName: null });
+        return `✅ *PESANAN BERHASIL!* ✅\n\nID Order: #${newOrder.id}\nNama: *${session.tempName || 'Pelanggan'}*\nTotal: *Rp ${total.toLocaleString()}*\nAlamat: ${address}\n\nTerima kasih sudah memesan!`;
     }
 
     return "Ketik 'menu' untuk mulai belanja.";

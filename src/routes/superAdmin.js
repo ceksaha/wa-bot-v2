@@ -67,4 +67,31 @@ router.post('/tenants/create', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
+// Delete Tenant & Associated Data
+router.delete('/tenants/:id', async (req, res) => {
+    try {
+        const tenant = await Tenant.findByPk(req.params.id);
+        if (!tenant) return res.status(404).json({ success: false, error: 'Tenant tidak ditemukan.' });
+
+        const adminId = tenant.admin_id;
+
+        // 1. Delete Orders & Products
+        // Need to import Order and Product models manually since they are not at the top
+        const Order = require('../models/order');
+        const Product = require('../models/product');
+        await Order.destroy({ where: { tenant_id: tenant.id } });
+        await Product.destroy({ where: { tenant_id: tenant.id } });
+
+        // 2. Delete Tenant
+        await tenant.destroy();
+
+        // 3. Delete Admin User
+        if (adminId) {
+            await Admin.destroy({ where: { id: adminId } });
+        }
+
+        res.json({ success: true, message: 'Tenant dan data terkait berhasil dihapus.' });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
 module.exports = router;

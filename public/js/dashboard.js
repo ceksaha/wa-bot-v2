@@ -242,7 +242,9 @@ function updatePairingCodeUI(code) {
     const badge = document.getElementById('inlinePairingCode');
     const box = document.getElementById('inlinePairingCodeBox');
     if (code) {
-        if (box) box.innerText = code;
+        // Format the code: insert a dash after the first 4 characters (if it has 8 characters)
+        const formattedCode = code.length === 8 ? code.slice(0, 4) + '-' + code.slice(4) : code;
+        if (box) box.innerText = formattedCode;
         if (badge) badge.style.display = 'inline-flex';
     } else {
         if (badge) badge.style.display = 'none';

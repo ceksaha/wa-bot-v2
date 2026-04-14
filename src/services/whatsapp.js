@@ -101,7 +101,11 @@ async function startSession(tenant) {
         if (m.type !== 'notify') return;
         for (const msg of m.messages) {
             if (!msg.message || msg.key.fromMe) continue;
+            
             const from = msg.key.remoteJid;
+            
+            // IGNORE GROUP MESSAGES (@g.us)
+            if (from.endsWith('@g.us')) continue;
             const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
             
             if (text) {

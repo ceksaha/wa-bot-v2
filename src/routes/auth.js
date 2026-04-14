@@ -10,10 +10,22 @@ router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
         const admin = await Admin.findOne({ where: { username } });
-        if (!admin) return res.status(401).json({ success: false, message: 'Username atau password salah' });
+        if (!admin) {
+            console.log(`[LOGIN] User NOT FOUND: ${username}`);
+            return res.status(401).json({ success: false, message: 'Username tidak terdaftar' });
+        }
 
+        console.log(`[LOGIN] User found: ${admin.username}, Role: ${admin.role}`);
         const isMatch = await bcrypt.compare(password, admin.password);
-        if (!isMatch) return res.status(401).json({ success: false, message: 'Username atau password salah' });
+        if (!isMatch) {
+            console.log(`[LOGIN] Password MISMATCH for user: ${username}`);
+            // Check if it's plain text (fallback for debugging)
+            if (password === admin.password) {
+                 console.log(`[LOGIN] WARNING: User ${username} is using PLAIN TEXT password but bcrypt expected.`);
+                 return res.status(401).json({ success: false, message: 'Keamanan akun perlu diupdate. Silakan hubungi admin.' });
+            }
+            return res.status(401).json({ success: false, message: 'Password salah' });
+        }
 
         const tenant = await Tenant.findOne({ where: { admin_id: admin.id } });
 

@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
-const Admin = require('./src/models/admin');
-const Tenant = require('./src/models/tenant');
-const { connectDB } = require('./src/config/database');
+const Admin = require('../src/models/admin');
+const Tenant = require('../src/models/tenant');
+const { connectDB } = require('../src/config/database');
 
 async function test() {
     await connectDB();

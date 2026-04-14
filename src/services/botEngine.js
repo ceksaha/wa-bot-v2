@@ -72,8 +72,8 @@ const handleIncomingMessage = async (from, text, tenantId) => {
         return summary;
     }
 
-    // Reset flow if "pesan" or session is START
-    if (command === 'pesan' || session.stage === 'START') {
+    // Reset flow if "pesan" is typed
+    if (command === 'pesan') {
         const products = await Product.findAll({ where: { tenant_id: tenantId, is_available: true } });
         if (products.length === 0) return `📴 Maaf, menu di *${storeName}* belum tersedia.`;
 

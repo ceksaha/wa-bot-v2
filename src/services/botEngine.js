@@ -163,7 +163,7 @@ const handleIncomingMessage = async (from, text, tenantId) => {
         notifyNewOrder(tenantId, newOrder);
 
         await session.update({ stage: 'START', cart: [], tempName: null });
-        return `✅ *PESANAN BERHASIL!* ✅\n\nID Order: #${newOrder.id}\nNama: *${session.tempName || 'Pelanggan'}*\nTotal: *Rp ${total.toLocaleString()}*\nAlamat: ${address}\n\nTerima kasih sudah memesan!`;
+        return `✅ *PESANAN BERHASIL!* ✅\n\nID Order: #${newOrder.id}\nNama: *${newOrder.customer_name}*\nTotal: *Rp ${total.toLocaleString()}*\nAlamat: ${address}\n\nTerima kasih sudah memesan!`;
     }
 
     return "Ketik *pesan* untuk mulai belanja.";

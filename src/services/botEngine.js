@@ -85,9 +85,7 @@ const handleIncomingMessage = async (from, text, tenantId) => {
         
         await session.update({ tempMenuMap: newMenuMap, stage: 'SELECT_PRODUCT' });
         return menuStr;
-    }
-
-    if (session.stage === 'SELECT_PRODUCT') {
+    } else if (session.stage === 'SELECT_PRODUCT') {
         // Handle input with multiplier (e.g., 3*5)
         let choiceInput = text;
         let quantity = 1;
@@ -115,9 +113,7 @@ const handleIncomingMessage = async (from, text, tenantId) => {
             return `✅ *${product.name}* (x${quantity}) ditambah ke keranjang!\n\nKetik *1* untuk tambah menu,\natau *2* untuk Checkout.`;
         }
         return "⚠️ Pilih angka menu yang sesuai (contoh: 1 atau 1*5).";
-    }
-
-    if (session.stage === 'ADD_MORE') {
+    } else if (session.stage === 'ADD_MORE') {
         if (text === '1') {
             return await handleIncomingMessage(from, 'menu', tenantId);
         } else if (text === '2') {
@@ -132,19 +128,15 @@ const handleIncomingMessage = async (from, text, tenantId) => {
             return summary;
         }
         return "⚠️ Pilih 1 atau 2.";
-    }
-
-    if (session.stage === 'ASKING_NAME') {
+    } else if (session.stage === 'ASKING_NAME') {
         const name = text.trim();
         if (name.length < 2) return "⚠️ Mohon masukkan Nama Lengkap yang valid.";
         
         await session.update({ tempName: name, stage: 'ASKING_ADDRESS' });
         return `Halo *${name}*, sekarang kirimkan *Alamat Lengkap* pengiriman Anda:`;
-    }
-
-    if (session.stage === 'ASKING_ADDRESS') {
+    } else if (session.stage === 'ASKING_ADDRESS') {
         const address = text.trim();
-        if (address.length < 5) return "⚠️ Mohon masukkan Alamat Lengkap yang jelas.";
+        if (address.length < 3) return "⚠️ Mohon masukkan Alamat Lengkap yang jelas.";
 
         let total = 0;
         cart.forEach(item => total += item.price * item.qty);

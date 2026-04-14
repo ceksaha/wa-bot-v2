@@ -1,15 +1,20 @@
 import paramiko
 import sys
+import io
+
+# Force UTF-8 for stdout and stderr to handle server output symbols like checkmarks
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Server Configuration
 hostname = '192.168.7.200'
 username = 'sijobtek'
 password = 'adm5wira'
-remote_path = '/opt/wa-order-bot' # Sesuaikan dengan folder di server Anda
+remote_path = '/opt/wa-order-bot-v2' # Folder untuk Multi-User V2
 
 def deploy():
     try:
-        print(f"📡 Menghubungkan ke {hostname}...")
+        print(f"Connecting to {hostname}...")
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(hostname, username=username, password=password)
@@ -22,21 +27,21 @@ def deploy():
         ]
         
         for cmd in commands:
-            print(f"🏃 Menjalankan: {cmd}")
+            print(f"Running: {cmd}")
             stdin, stdout, stderr = client.exec_command(cmd)
             
-            # Print output
-            out = stdout.read().decode().strip()
-            err = stderr.read().decode().strip()
+            # Print output (ignoring errors during decode if any)
+            out = stdout.read().decode('utf-8', errors='ignore').strip()
+            err = stderr.read().decode('utf-8', errors='ignore').strip()
             
-            if out: print(f"✅ Output: {out}")
-            if err: print(f"⚠️ Warning/Error: {err}")
+            if out: print(f"Output: {out}")
+            if err: print(f"Warning/Err: {err}")
 
         client.close()
-        print("\n✨ Deployment Selesai! Aplikasi V2 sudah diperbarui di server.")
+        print("\nDeployment Finished Successfully!")
 
     except Exception as e:
-        print(f"❌ Error saat deployment: {e}")
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
     deploy()

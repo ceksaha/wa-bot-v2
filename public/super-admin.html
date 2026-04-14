@@ -190,9 +190,13 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (await res.json()) {
+            const data = await res.json();
+            if (data.success) {
                 closeModal();
                 fetchTenants();
+                alert('✅ Tenant Berhasil Didaftarkan!');
+            } else {
+                alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan sistem'));
             }
         };
 
@@ -208,9 +212,13 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (await res.json()) {
+            const data = await res.json();
+            if (data.success) {
                 closeModal();
                 fetchTenants();
+                alert('✅ Perubahan Berhasil Disimpan!');
+            } else {
+                alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan sistem'));
             }
         };
 

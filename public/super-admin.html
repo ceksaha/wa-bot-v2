@@ -142,17 +142,19 @@
             const tbody = document.querySelector('#tenantsTable tbody');
             tbody.innerHTML = '';
             tenants.forEach(t => {
-                const expiry = new Date(t.expired_at);
-                const isExpired = expiry < new Date() || !t.is_active;
+                const expiry = t.expired_at ? new Date(t.expired_at) : null;
+                const isExpired = !expiry || expiry < new Date() || !t.is_active;
+                const expiryStr = expiry ? expiry.toLocaleDateString('id-ID') : 'Tidak Diset';
+                const expiryShort = t.expired_at ? t.expired_at.split('T')[0] : '';
                 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${t.shop_name}</strong></td>
                     <td>${t.Admin?.username || '-'}</td>
-                    <td>${expiry.toLocaleDateString('id-ID')}</td>
+                    <td>${expiryStr}</td>
                     <td><span class="${isExpired ? 'badge-expired' : 'badge-active'}">${isExpired ? 'Inaktif' : 'Aktif'}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-outline" onclick="openEditModal(${t.id}, '${t.expired_at.split('T')[0]}', ${t.is_active})">⚙️ Atur</button>
+                        <button class="btn btn-sm btn-outline" onclick="openEditModal(${t.id}, '${expiryShort}', ${t.is_active})">⚙️ Atur</button>
                     </td>
                 `;
                 tbody.appendChild(tr);

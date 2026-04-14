@@ -23,6 +23,11 @@ async function checkAuth() {
         const data = await res.json();
         if (data.success) {
             currentAdmin = data.admin;
+            // Show Super Admin menu if applicable
+            if (currentAdmin.role === 'super_admin') {
+                const superBtn = document.getElementById('menu_superAdmin');
+                if (superBtn) superBtn.style.display = 'block';
+            }
         } else {
             window.location.href = '/login';
         }

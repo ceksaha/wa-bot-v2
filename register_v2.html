@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar UMKM Baru | WA Order Bot V2</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            padding: 2rem;
+        }
+        .login-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.8s ease-out;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-header h1 {
+            font-size: 1.875rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        .login-header p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+        .error-msg, .success-msg {
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+            display: none;
+            border: 1px solid;
+        }
+        .error-msg {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+        .success-msg {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <h1>Daftar UMKM</h1>
+            <p>Mulai jualan otomatis dengan WhatsApp Bot</p>
+        </div>
+        
+        <div id="errorMsg" class="error-msg"></div>
+        <div id="successMsg" class="success-msg"></div>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" required placeholder="pilih username unik">
+            </div>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label>Password</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label>Nama Toko</label>
+                <input type="text" id="shop_name" required placeholder="contoh: Kedai Berkah">
+            </div>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label>Nomor WhatsApp Bot</label>
+                <input type="text" id="bot_number" required placeholder="contoh: 62812345678">
+                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Gunakan format angka saja diawali 62</small>
+            </div>
+            <button type="submit" class="action-btn success" style="width: 100%; margin-top: 2rem; padding: 1rem; font-weight: 600;">
+                Buat Akun Sekarang
+            </button>
+            <p style="text-align: center; margin-top: 1.5rem; font-size: 0.875rem; color: var(--text-muted);">
+                Sudah punya akun? <a href="/login" style="color: var(--primary); text-decoration: none; font-weight: 600;">Login</a>
+            </p>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                shop_name: document.getElementById('shop_name').value,
+                bot_number: document.getElementById('bot_number').value
+            };
+
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    successMsg.innerText = data.message;
+                    successMsg.style.display = 'block';
+                    document.getElementById('registerForm').reset();
+                    setTimeout(() => window.location.href = '/login', 3000);
+                } else {
+                    errorMsg.innerText = data.message || 'Registrasi gagal';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.innerText = 'Terjadi kesalahan koneksi';
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

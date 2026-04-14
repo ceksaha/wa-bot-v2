@@ -93,8 +93,7 @@ const startTunnel = () => {
                         // Notify via WA if bot number exists
                         if (tenant.bot_number) {
                             const msg = `🚀 *DASHBOARD ONLINE*\n\nAlamat baru Anda:\n${tunnelUrl}/dashboard\n\nLink ini bisa diakses dari luar jaringan.`;
-                            // Delay slightly to ensure WA is ready
-                            setTimeout(() => sendWhatsAppMessage(tenant.id, tenant.bot_number, msg), 5000);
+                            sendWhatsAppMessage(tenant.id, tenant.bot_number, msg);
                         }
                     }
                 }

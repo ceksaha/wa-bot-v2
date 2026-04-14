@@ -16,6 +16,7 @@ const Tenant = require('../models/tenant');
 const logger = pino({ level: 'silent' });
 const sessions = new Map(); // tenantId -> sock
 const pairingCodes = new Map(); // tenantId -> code
+const pendingMessages = new Map(); // tenantId -> [{to, text}]
 
 /**
  * Initialize all tenant WhatsApp sessions
@@ -92,6 +93,17 @@ async function startSession(tenant) {
             console.log(`✅ [UMKM-${tenantId}] Connected Successfully!`);
             pairingCodes.delete(tenantId);
             notifyPairingCode(tenantId, null);
+
+            // Send pending messages
+            const queue = pendingMessages.get(tenantId) || [];
+            if (queue.length > 0) {
+                console.log(`[UMKM-${tenantId}] Sending ${queue.length} pending messages...`);
+                while (queue.length > 0) {
+                    const msg = queue.shift();
+                    sendWhatsAppMessage(tenantId, msg.to, msg.text);
+                }
+                pendingMessages.set(tenantId, []);
+            }
         }
     });
 
@@ -120,14 +132,23 @@ async function startSession(tenant) {
     });
 }
 
-const sendWhatsAppMessage = async (tenantId, from, text) => {
+const sendWhatsAppMessage = async (tenantId, to, text) => {
     const sock = sessions.get(tenantId);
-    if (!sock) return;
+    
+    // If socket doesn't exist or not connected, queue it
+    if (!sock || !sock.user) {
+        console.log(`[UMKM-${tenantId}] WA not ready, queuing message to: ${to}`);
+        if (!pendingMessages.has(tenantId)) pendingMessages.set(tenantId, []);
+        pendingMessages.get(tenantId).push({ to, text });
+        return;
+    }
+
     try { 
-        const jid = from.includes('@') ? from : from.replace(/\D/g, '') + '@s.whatsapp.net';
+        const jid = to.includes('@') ? to : to.replace(/\D/g, '') + '@s.whatsapp.net';
         await sock.sendMessage(jid, { text }); 
     } catch (e) {
         console.error(`[UMKM-${tenantId}] Gagal mengirim pesan:`, e.message);
+        // On error, we could re-queue but let's avoid infinite loops for now
     }
 };
 

@@ -1,4 +1,4 @@
-const { Admin } = require('./src/models/admin');
+const Admin = require('./src/models/admin');
 const { connectDB } = require('./src/config/database');
 
 async function makeSuper(username, password) {

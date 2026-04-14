@@ -29,7 +29,7 @@ router.post('/login', async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000
         });
 
-        res.json({ success: true, message: 'Login berhasil' });
+        res.json({ success: true, message: 'Login berhasil', role: admin.role });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });
     }

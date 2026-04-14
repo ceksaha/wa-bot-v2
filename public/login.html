@@ -97,7 +97,11 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    window.location.href = '/dashboard';
+                    if (data.role === 'super_admin') {
+                        window.location.href = '/super-admin';
+                    } else {
+                        window.location.href = '/dashboard';
+                    }
                 } else {
                     errorMsg.innerText = data.message || 'Login gagal';
                     errorMsg.style.display = 'block';

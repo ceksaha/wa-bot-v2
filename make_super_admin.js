@@ -1,5 +1,6 @@
 const Admin = require('./src/models/admin');
 const { connectDB } = require('./src/config/database');
+const bcrypt = require('bcryptjs');
 
 async function makeSuper(username, password) {
     await connectDB();
@@ -8,20 +9,21 @@ async function makeSuper(username, password) {
     
     if (admin) {
         admin.role = 'super_admin';
-        if (password) admin.password = password;
+        if (password) admin.password = await bcrypt.hash(password, 10);
         await admin.save();
-        console.log(`✅ User ${username} promoted to Super Admin!`);
+        console.log(`✅ User ${username} promoted to Super Admin (with hashed password)!`);
     } else {
         if (!password) {
             console.error('Password is required for a new user.');
             process.exit(1);
         }
+        const hashedPassword = await bcrypt.hash(password, 10);
         admin = await Admin.create({
             username,
-            password,
+            password: hashedPassword,
             role: 'super_admin'
         });
-        console.log(`✅ New Super Admin ${username} created!`);
+        console.log(`✅ New Super Admin ${username} created (with hashed password)!`);
     }
     process.exit(0);
 }

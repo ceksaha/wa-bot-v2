@@ -1,10 +1,15 @@
 const { Sequelize } = require('sequelize');
 
-const sequelize = new Sequelize('wa_order_v2', 'root', '', {
-    host: 'localhost',
-    dialect: 'mysql',
-    logging: false
-});
+const sequelize = new Sequelize(
+    process.env.DB_NAME || 'wa_order_v2',
+    process.env.DB_USER || 'root',
+    process.env.DB_PASS || '',
+    {
+        host: process.env.DB_HOST || 'localhost',
+        dialect: process.env.DB_DIALECT || 'mysql',
+        logging: false
+    }
+);
 
 const connectDB = async () => {
     try {
@@ -13,7 +18,7 @@ const connectDB = async () => {
         await sequelize.sync({ alter: true });
         console.log('✅ MySQL Models Synchronized');
     } catch (error) {
-        console.error('❌ Database connection error:', error);
+        console.error('❌ Database connection error:', error.message);
     }
 };
 

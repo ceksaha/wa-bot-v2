@@ -10,10 +10,12 @@ const pino = require('pino');
 const path = require('path');
 const fs = require('fs');
 const { handleIncomingMessage } = require('./botEngine');
+const { notifyPairingCode } = require('./socket');
 const Tenant = require('../models/tenant');
 
 const logger = pino({ level: 'silent' });
 const sessions = new Map(); // tenantId -> sock
+const pairingCodes = new Map(); // tenantId -> code
 
 /**
  * Initialize all tenant WhatsApp sessions
@@ -21,9 +23,13 @@ const sessions = new Map(); // tenantId -> sock
 async function startWhatsApp() {
     console.log('🚀 Loading Multi-Tenant WhatsApp Manager...');
     const tenants = await Tenant.findAll();
-    console.log(`📋 Found ${tenants.length} UMKM in database.`);
     
     for (const tenant of tenants) {
+        // Skip tenants without a bot number
+        if (!tenant.bot_number || tenant.bot_number.length < 8) {
+            console.log(`[UMKM-${tenant.id}] Skipping: No valid bot number.`);
+            continue;
+        }
         await startSession(tenant);
     }
 }
@@ -37,11 +43,10 @@ async function startSession(tenant) {
 
     console.log(`[UMKM-${tenantId}] Initializing session...`);
     
-    const authPath = path.join(__dirname, `../auth/tenant_${tenantId}`);
+    const authPath = path.join(__dirname, `../../../sessions/tenant_${tenantId}`);
     if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
 
     const { state, saveCreds } = await useMultiFileAuthState(authPath);
-    
     const { version } = await fetchLatestBaileysVersion();
 
     const sock = makeWASocket({
@@ -51,7 +56,8 @@ async function startSession(tenant) {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, logger)
         },
-        browser: [`UMKM Bot V2`, 'Chrome', '1.0.0'],
+        // Use a more standard browser string
+        browser: ['Ubuntu', 'Chrome', '114.0.5735.199'],
         syncFullHistory: false,
         printQRInTerminal: false,
         shouldIgnoreJid: jid => isJidBroadcast(jid)
@@ -59,17 +65,22 @@ async function startSession(tenant) {
 
     sessions.set(tenantId, sock);
 
-    // Pairing Logic if not registered
+    // Pairing Logic
     if (pairingNumber && !sock.authState.creds.registered) {
-        console.log(`[UMKM-${tenantId}] Requesting pairing for ${pairingNumber}...`);
+        console.log(`[UMKM-${tenantId}] Requesting code for ${pairingNumber} in 10s...`);
         setTimeout(async () => {
             try {
+                // Double check if still not registered before requesting
+                if (sock.authState.creds.registered) return;
+                
                 const code = await sock.requestPairingCode(pairingNumber.replace(/\D/g, ''));
-                console.log(`🔗 [UMKM-${tenantId}] PAIRING CODE: ${code}`);
+                console.log(`🔗 [UMKM-${tenantId}] NEW PAIRING CODE: ${code}`);
+                pairingCodes.set(tenantId, code);
+                notifyPairingCode(tenantId, code);
             } catch (err) {
-                console.error(`[UMKM-${tenantId}] Pairing failed:`, err.message);
+                console.error(`[UMKM-${tenantId}] Pairing request error:`, err.message);
             }
-        }, 5000);
+        }, 10000); // 10 seconds delay
     }
 
     sock.ev.on('connection.update', (update) => {
@@ -79,6 +90,8 @@ async function startSession(tenant) {
             if (shouldReconnect) startSession(tenant);
         } else if (connection === 'open') {
             console.log(`✅ [UMKM-${tenantId}] Connected Successfully!`);
+            pairingCodes.delete(tenantId);
+            notifyPairingCode(tenantId, null);
         }
     });
 
@@ -114,4 +127,8 @@ const sendWhatsAppMessage = async (tenantId, from, text) => {
     }
 };
 
-module.exports = { startWhatsApp, sendWhatsAppMessage };
+const getPairingCode = (tenantId) => {
+    return pairingCodes.get(tenantId) || null;
+};
+
+module.exports = { startWhatsApp, sendWhatsAppMessage, startSession, getPairingCode };

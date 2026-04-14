@@ -205,7 +205,7 @@ router.get('/whatsapp/pairing-code', async (req, res) => {
 router.post('/whatsapp/reset', async (req, res) => {
     try {
         const tenant = await getTenant(req.admin.id);
-        const authPath = path.join(__dirname, '../auth', `tenant_${tenant.id}`);
+        const authPath = path.join(__dirname, '../../../sessions', `tenant_${tenant.id}`);
         if (fs.existsSync(authPath)) {
             const { exec } = require('child_process');
             exec(`rm -rf ${authPath}`, (err) => {

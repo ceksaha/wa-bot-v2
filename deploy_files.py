@@ -1,38 +1,42 @@
 import paramiko
-import os
+import sys
 
+# Server Configuration
 hostname = '192.168.7.200'
 username = 'sijobtek'
-password = 'adm5wira' # Fixed password
+password = 'adm5wira'
+remote_path = '/opt/wa-order-bot' # Sesuaikan dengan folder di server Anda
 
-files_to_upload = [
-    ('whatsapp.js', '/opt/wa-order-bot/services/whatsapp.js'),
-    ('api.js', '/opt/wa-order-bot/routes/api.js'),
-    ('dashboard.html', '/opt/wa-order-bot/public/dashboard.html'),
-    ('dashboard.js', '/opt/wa-order-bot/public/js/dashboard.js'),
-    ('style.css', '/opt/wa-order-bot/public/css/style.css'),
-]
+def deploy():
+    try:
+        print(f"📡 Menghubungkan ke {hostname}...")
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(hostname, username=username, password=password)
+        
+        # List perintah yang akan dijalankan di server
+        commands = [
+            f"cd {remote_path} && git pull origin main",
+            f"cd {remote_path} && npm install --production",
+            f"echo '{password}' | sudo -S pm2 restart 2 || pm2 restart server"
+        ]
+        
+        for cmd in commands:
+            print(f"🏃 Menjalankan: {cmd}")
+            stdin, stdout, stderr = client.exec_command(cmd)
+            
+            # Print output
+            out = stdout.read().decode().strip()
+            err = stderr.read().decode().strip()
+            
+            if out: print(f"✅ Output: {out}")
+            if err: print(f"⚠️ Warning/Error: {err}")
 
-try:
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(hostname, username=username, password=password)
-    
-    sftp = client.open_sftp()
-    
-    for local_file, remote_path in files_to_upload:
-        print(f"Uploading {local_file} to {remote_path}...")
-        sftp.put(local_file, remote_path)
-    
-    sftp.close()
-    
-    print("Restarting bot via PM2...")
-    stdin, stdout, stderr = client.exec_command("echo 'adm5wira' | sudo -S pm2 restart 2")
-    print(stdout.read().decode())
-    print(stderr.read().decode())
-    
-    client.close()
-    print("Deployment finished successfully!")
+        client.close()
+        print("\n✨ Deployment Selesai! Aplikasi V2 sudah diperbarui di server.")
 
-except Exception as e:
-    print(f"Error during deployment: {e}")
+    except Exception as e:
+        print(f"❌ Error saat deployment: {e}")
+
+if __name__ == "__main__":
+    deploy()

@@ -45,8 +45,9 @@ app.get('/health', (req, res) => res.status(200).send('OK'));
 
 // Start Server
 const PORT = process.env.PORT || 3002;
-server.listen(PORT, () => {
-    console.log(`🚀 V2 Multi-Tenant Dashboard: http://localhost:${PORT}/dashboard`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 V2 Multi-Tenant Dashboard: http://192.168.7.200:${PORT}/dashboard`);
+    console.log(`📡 Local Access (if applicable): http://localhost:${PORT}/dashboard`);
     
     // Start WhatsApp Manager
     const { startWhatsApp } = require('./src/services/whatsapp');

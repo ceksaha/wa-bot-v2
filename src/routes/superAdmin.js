@@ -3,6 +3,7 @@ const router = express.Router();
 const Tenant = require('../models/tenant');
 const Admin = require('../models/admin');
 const { protect } = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
 
 // Middleware to ensure user is a Super Admin
 const superProtect = (req, res, next) => {
@@ -46,10 +47,13 @@ router.post('/tenants/create', async (req, res) => {
     try {
         const { username, password, shop_name } = req.body;
         
+        // Hash password before saving
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         // 1. Create Admin
         const newAdmin = await Admin.create({
             username,
-            password, // In production, hash this!
+            password: hashedPassword,
             role: 'tenant'
         });
 

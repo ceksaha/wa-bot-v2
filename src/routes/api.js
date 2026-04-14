@@ -179,7 +179,13 @@ router.get('/orders/export', async (req, res) => {
 router.get('/settings', async (req, res) => {
     try {
         const tenant = await getTenant(req.admin.id);
-        res.json({ success: true, data: { shop_name: tenant.shop_name, shop_slogan: tenant.shop_slogan, bot_number: tenant.bot_number } });
+        const data = {
+            shop_name: tenant.shop_name,
+            shop_slogan: tenant.shop_slogan,
+            bot_number: tenant.bot_number,
+            tunnel_url: tenant.tunnel_url
+        };
+        res.json({ success: true, data });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
@@ -187,7 +193,8 @@ router.patch('/settings/:key', async (req, res) => {
     try {
         const tenant = await getTenant(req.admin.id);
         const { key } = req.params; const { value } = req.body;
-        if (['shop_name', 'shop_slogan', 'bot_number'].includes(key)) {
+        const allowedKeys = ['shop_name', 'shop_slogan', 'bot_number', 'tunnel_url'];
+        if (allowedKeys.includes(key)) {
             tenant[key] = value; await tenant.save();
         }
         res.json({ success: true, data: tenant });

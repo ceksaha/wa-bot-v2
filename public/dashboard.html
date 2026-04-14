@@ -154,6 +154,15 @@
                                 <input type="text" id="set_shopSlogan">
                             </div>
 
+                            <div class="form-group" style="background: rgba(59, 130, 246, 0.05); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(59, 130, 246, 0.2);">
+                                <label style="color: var(--primary); font-weight: 600;">🔗 Link Akses Publik (Cloudflare)</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="text" id="set_tunnelUrl" readonly style="background: #f8fafc; cursor: pointer;" onclick="this.select(); document.execCommand('copy'); alert('Link disalin!')">
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="window.open(document.getElementById('set_tunnelUrl').value, '_blank')">Buka</button>
+                                </div>
+                                <small style="color: var(--text-muted);">Link ini otomatis terupdate jika bot dinyalakan ulang.</small>
+                            </div>
+
                             <div class="form-group highlight-bot" style="background: rgba(16, 185, 129, 0.05); padding: 1.5rem; border-radius: 1rem; border: 1px dashed var(--primary);">
                                 <label style="color: var(--primary); font-weight: 700;">Nomor WhatsApp Bot (Utama)</label>
                                 <div class="input-with-badge" style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem;">

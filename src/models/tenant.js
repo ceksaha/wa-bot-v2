@@ -8,6 +8,7 @@ const Tenant = sequelize.define('Tenant', {
     shop_name: { type: DataTypes.STRING, allowNull: false, defaultValue: 'Toko Baru' },
     shop_slogan: { type: DataTypes.STRING },
     bot_number: { type: DataTypes.STRING }, // specifically for the WA bot assigned
+    tunnel_url: { type: DataTypes.STRING }
 });
 
 module.exports = Tenant;

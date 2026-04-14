@@ -51,7 +51,10 @@ server.listen(PORT, '0.0.0.0', () => {
     
     // Start WhatsApp Manager
     const { startWhatsApp } = require('./src/services/whatsapp');
-    startWhatsApp().catch(err => console.error('❌ WhatsApp Manager Error:', err));
+    startWhatsApp().then(() => {
+        // Start Tunnel after WA is ready
+        startTunnel();
+    }).catch(err => console.error('❌ WhatsApp Manager Error:', err));
 });
 
 // Graceful Shutdown
@@ -60,6 +63,45 @@ const shutdown = async (signal) => {
     server.close(() => {
         console.log('- Server stopped.');
         process.exit(0);
+    });
+};
+
+// Start Cloudflare Quick Tunnel
+const startTunnel = () => {
+    const { spawn } = require('child_process');
+    const { sendWhatsAppMessage } = require('./src/services/whatsapp');
+    const Tenant = require('./src/models/tenant');
+
+    console.log('🌐 Starting Cloudflare Quick Tunnel...');
+    const cf = spawn('cloudflared', ['tunnel', '--url', `http://localhost:${PORT}`]);
+
+    cf.stderr.on('data', async (data) => {
+        const output = data.toString();
+        const match = output.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
+        
+        if (match) {
+            const tunnelUrl = match[0];
+            console.log(`✨ New Public Link: ${tunnelUrl}`);
+
+            try {
+                const tenants = await Tenant.findAll();
+                for (const tenant of tenants) {
+                    if (tenant.tunnel_url !== tunnelUrl) {
+                        tenant.tunnel_url = tunnelUrl;
+                        await tenant.save();
+
+                        // Notify via WA if bot number exists
+                        if (tenant.bot_number) {
+                            const msg = `🚀 *DASHBOARD ONLINE*\n\nAlamat baru Anda:\n${tunnelUrl}/dashboard\n\nLink ini bisa diakses dari luar jaringan.`;
+                            // Delay slightly to ensure WA is ready
+                            setTimeout(() => sendWhatsAppMessage(tenant.id, tenant.bot_number, msg), 5000);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('❌ Error updating tunnel URL:', err.message);
+            }
+        }
     });
 };
 

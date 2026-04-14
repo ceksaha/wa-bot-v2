@@ -190,6 +190,7 @@ async function fetchSettings() {
             if (document.getElementById('set_shopName')) document.getElementById('set_shopName').value = data.shop_name || '';
             if (document.getElementById('set_shopSlogan')) document.getElementById('set_shopSlogan').value = data.shop_slogan || '';
             if (document.getElementById('set_botNumber')) document.getElementById('set_botNumber').value = data.bot_number || '';
+            if (document.getElementById('set_tunnelUrl')) document.getElementById('set_tunnelUrl').value = data.tunnel_url || 'Sedang memuat...';
             
             if (document.getElementById('shop_name_display')) document.getElementById('shop_name_display').innerText = data.shop_name || 'My Shop';
             if (document.getElementById('shop_slogan_display')) document.getElementById('shop_slogan_display').innerText = data.shop_slogan || 'Welcome';

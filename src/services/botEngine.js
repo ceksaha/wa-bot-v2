@@ -72,12 +72,12 @@ const handleIncomingMessage = async (from, text, tenantId) => {
         return summary;
     }
 
-    // Reset flow if "menu" or session is START
-    if (command === 'menu' || session.stage === 'START') {
+    // Reset flow if "pesan" or session is START
+    if (command === 'pesan' || session.stage === 'START') {
         const products = await Product.findAll({ where: { tenant_id: tenantId, is_available: true } });
         if (products.length === 0) return `📴 Maaf, menu di *${storeName}* belum tersedia.`;
 
-        let menuStr = `🌟 *MENU ${storeName.toUpperCase()}* 🌟\n${shopSlogan}\n\nPilih angka untuk memesan:\n`;
+        let menuStr = `Selamat datang di *${storeName}*.\nSilahkan pilih menu yang akan anda pesan:\n\n`;
         const newMenuMap = [];
         products.forEach((p, idx) => {
             menuStr += `${idx + 1}. ${p.name} - Rp ${p.price.toLocaleString()}\n`;
@@ -116,7 +116,7 @@ const handleIncomingMessage = async (from, text, tenantId) => {
         return "⚠️ Pilih angka menu yang sesuai (contoh: 1 atau 1*5).";
     } else if (session.stage === 'ADD_MORE') {
         if (text === '1') {
-            return await handleIncomingMessage(from, 'menu', tenantId);
+            return await handleIncomingMessage(from, 'pesan', tenantId);
         } else if (text === '2') {
             let total = 0;
             let summary = "📄 *RINGKASAN ORDER* 📄\n\n";
@@ -159,7 +159,7 @@ const handleIncomingMessage = async (from, text, tenantId) => {
         return `✅ *PESANAN BERHASIL!* ✅\n\nID Order: #${newOrder.id}\nNama: *${session.tempName || 'Pelanggan'}*\nTotal: *Rp ${total.toLocaleString()}*\nAlamat: ${address}\n\nTerima kasih sudah memesan!`;
     }
 
-    return "Ketik 'menu' untuk mulai belanja.";
+    return "Ketik *pesan* untuk mulai belanja.";
 };
 
 module.exports = { handleIncomingMessage };

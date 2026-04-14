@@ -23,7 +23,7 @@ def deploy():
         commands = [
             f"cd {remote_path} && git pull origin main",
             f"cd {remote_path} && npm install --production",
-            f"echo '{password}' | sudo -S pm2 restart 2 || pm2 restart server"
+            f"pm2 restart wa-bot-v2 || (cd {remote_path} && pm2 start server.js --name wa-bot-v2)"
         ]
         
         for cmd in commands:

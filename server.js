@@ -28,9 +28,11 @@ app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 // Routes
 const authRoutes = require('./src/routes/auth');
 const apiRoutes = require('./src/routes/api');
+const superAdminRoutes = require('./src/routes/superAdmin');
 
 app.use('/api/auth', authRoutes);
 app.use('/api', protect, apiRoutes);
+app.use('/api/super', superAdminRoutes);
 
 // Front-end routes
 app.get('/', (req, res) => res.redirect('/dashboard'));
@@ -38,6 +40,10 @@ app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'log
 app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'public', 'register.html')));
 app.get('/dashboard', protect, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+app.get('/super-admin', protect, (req, res) => {
+    if (req.admin.role !== 'super_admin') return res.redirect('/dashboard');
+    res.sendFile(path.join(__dirname, 'public', 'super-admin.html'));
 });
 
 // Health Check

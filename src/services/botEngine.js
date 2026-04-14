@@ -34,6 +34,13 @@ const handleIncomingMessage = async (from, text, tenantId) => {
     const storeName = tenant.shop_name || "Toko Kami";
     const shopSlogan = tenant.shop_slogan || "Pusatnya Belanja";
 
+    // LICENSE CHECK
+    const now = new Date();
+    if (!tenant.is_active || (tenant.expired_at && new Date(tenant.expired_at) < now)) {
+        console.warn(`[UMKM-${tenantId}] Access denied: License expired or suspended.`);
+        return `⚠️ Layanan *${storeName}* sedang ditangguhkan sementara.\nMohon hubungi Admin Toko untuk info lebih lanjut.`;
+    }
+
     // Status Tracking Command
     if (command.startsWith('status')) {
         const orderIdPart = command.split(' ')[1];

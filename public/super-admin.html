@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin | Command Center</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --super-primary: #6366f1; /* Indigo */
+            --super-bg: #0f172a;
+            --super-card: #1e293b;
+        }
+        body { background-color: var(--super-bg); color: #f8fafc; }
+        .sidebar { background: var(--super-card); border-right: 1px solid #334155; }
+        .logo-box { background: linear-gradient(135deg, var(--super-primary), #a855f7); }
+        .stat-card.super { background: var(--super-card); border: 1px solid #334155; }
+        .table-container { background: var(--super-card); border: 1px solid #334155; }
+        tr { border-bottom: 1px solid #334155; }
+        th { color: #94a3b8; }
+        .badge-active { background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
+        .badge-expired { background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-box">
+                    <span class="logo-icon">👑</span>
+                    <span class="logo-text">SuperAdmin</span>
+                </div>
+            </div>
+            <nav class="sidebar-menu">
+                <button class="menu-item active">📦 Manajemen Vendor</button>
+                <button class="menu-item" onclick="location.href='/dashboard'">🔙 Ke Dashboard Toko</button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="user-info">
+                    <h1>SaaS Commander</h1>
+                    <p>Kontrol akses dan lisensi pelanggan Anda.</p>
+                </div>
+                <button class="btn btn-danger" onclick="logout()">Logout</button>
+            </header>
+
+            <div class="content-scroll">
+                <div class="stats-grid">
+                    <div class="stat-card super">
+                        <label>Total Pelanggan</label>
+                        <div id="stat_totalTenants" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card super">
+                        <label>Aktif</label>
+                        <div id="stat_activeTenants" class="stat-value" style="color: #10b981;">0</div>
+                    </div>
+                    <div class="stat-card super">
+                        <label>Expired/Suspen</label>
+                        <div id="stat_expiredTenants" class="stat-value" style="color: #ef4444;">0</div>
+                    </div>
+                </div>
+
+                <div class="table-container shadow-card">
+                    <div class="table-header">
+                        <h2>Daftar Vendor UMKM</h2>
+                        <button class="btn btn-primary" onclick="openCreateModal()">+ Tambah Tenant Baru</button>
+                    </div>
+                    <table id="tenantsTable">
+                        <thead>
+                            <tr>
+                                <th>Nama Toko</th>
+                                <th>User Admin</th>
+                                <th>Masa Aktif</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Create Tenant -->
+    <div id="createModal" class="modal">
+        <div class="modal-content" style="max-width: 500px; background: var(--super-card);">
+            <h3>Pendaftaran Tenant Baru</h3>
+            <form id="createForm">
+                <div class="form-group"><label>Nama Toko</label><input type="text" id="new_shopName" required></div>
+                <div class="form-group"><label>Username Admin</label><input type="text" id="new_username" required></div>
+                <div class="form-group"><label>Password Awal</label><input type="password" id="new_password" required></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary">Daftarkan Sekarang</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Edit Expiry -->
+    <div id="editModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; background: var(--super-card);">
+            <h3>Atur Lisensi</h3>
+            <form id="editForm">
+                <input type="hidden" id="edit_tenantId">
+                <div class="form-group">
+                    <label>Berlaku Sampai</label>
+                    <input type="date" id="edit_expiryDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Status Akun</label>
+                    <select id="edit_isActive">
+                        <option value="true">Aktif</option>
+                        <option value="false">Suspend / Non-Aktif</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Lisensi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        async function fetchTenants() {
+            const res = await fetch('/api/super/tenants');
+            const data = await res.json();
+            if (data.success) {
+                renderTenants(data.data);
+                updateStats(data.data);
+            }
+        }
+
+        function renderTenants(tenants) {
+            const tbody = document.querySelector('#tenantsTable tbody');
+            tbody.innerHTML = '';
+            tenants.forEach(t => {
+                const expiry = new Date(t.expired_at);
+                const isExpired = expiry < new Date() || !t.is_active;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${t.shop_name}</strong></td>
+                    <td>${t.Admin?.username || '-'}</td>
+                    <td>${expiry.toLocaleDateString('id-ID')}</td>
+                    <td><span class="${isExpired ? 'badge-expired' : 'badge-active'}">${isExpired ? 'Inaktif' : 'Aktif'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline" onclick="openEditModal(${t.id}, '${t.expired_at.split('T')[0]}', ${t.is_active})">⚙️ Atur</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateStats(tenants) {
+            document.getElementById('stat_totalTenants').innerText = tenants.length;
+            const active = tenants.filter(t => t.is_active && new Date(t.expired_at) > new Date()).length;
+            document.getElementById('stat_activeTenants').innerText = active;
+            document.getElementById('stat_expiredTenants').innerText = tenants.length - active;
+        }
+
+        function openCreateModal() { document.getElementById('createModal').style.display = 'flex'; }
+        function openEditModal(id, date, status) {
+            document.getElementById('edit_tenantId').value = id;
+            document.getElementById('edit_expiryDate').value = date;
+            document.getElementById('edit_isActive').value = status.toString();
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+        }
+
+        document.getElementById('createForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const payload = {
+                shop_name: document.getElementById('new_shopName').value,
+                username: document.getElementById('new_username').value,
+                password: document.getElementById('new_password').value
+            };
+            const res = await fetch('/api/super/tenants/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (await res.json()) {
+                closeModal();
+                fetchTenants();
+            }
+        };
+
+        document.getElementById('editForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit_tenantId').value;
+            const payload = {
+                expired_at: document.getElementById('edit_expiryDate').value,
+                is_active: document.getElementById('edit_isActive').value === 'true'
+            };
+            const res = await fetch(`/api/super/tenants/${id}/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (await res.json()) {
+                closeModal();
+                fetchTenants();
+            }
+        };
+
+        function logout() {
+            document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            location.href = '/login';
+        }
+
+        fetchTenants();
+    </script>
+</body>
+</html>

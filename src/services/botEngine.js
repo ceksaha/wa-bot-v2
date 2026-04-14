@@ -2,6 +2,7 @@ const UserSession = require('../models/userSession');
 const Product = require('../models/product');
 const Order = require('../models/order');
 const Tenant = require('../models/tenant');
+const { notifyNewOrder } = require('./socket');
 
 /**
  * Handle incoming WhatsApp messages for a specific tenant
@@ -150,6 +151,9 @@ const handleIncomingMessage = async (from, text, tenantId) => {
             address: address,
             status: 'pending'
         });
+
+        // NOTIFY DASHBOARD VIA SOCKET
+        notifyNewOrder(tenantId, newOrder);
 
         await session.update({ stage: 'START', cart: [], tempName: null });
         return `✅ *PESANAN BERHASIL!* ✅\n\nID Order: #${newOrder.id}\nNama: *${session.tempName || 'Pelanggan'}*\nTotal: *Rp ${total.toLocaleString()}*\nAlamat: ${address}\n\nTerima kasih sudah memesan!`;

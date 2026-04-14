@@ -14,6 +14,18 @@ const handleIncomingMessage = async (from, text, tenantId) => {
         where: { tenant_id: tenantId, phone: from }
     });
 
+    // Ensure session data is correctly parsed (handle possible string-to-json issues)
+    const getSessionData = (field) => {
+        let data = session[field];
+        if (typeof data === 'string') {
+            try { data = JSON.parse(data); } catch(e) { data = field === 'cart' || field === 'tempMenuMap' ? [] : {}; }
+        }
+        return data || (field === 'cart' || field === 'tempMenuMap' ? [] : {});
+    };
+
+    let cart = getSessionData('cart');
+    let tempMenuMap = getSessionData('tempMenuMap');
+
     // Get Tenant details
     const tenant = await Tenant.findByPk(tenantId);
     if (!tenant) return "⚠️ Error: Tenant tidak ditemukan.";
@@ -46,11 +58,11 @@ const handleIncomingMessage = async (from, text, tenantId) => {
     }
 
     if (command === 'keranjang') {
-        if (!session.cart || session.cart.length === 0) return "🛒 Keranjang Anda masih kosong.";
+        if (cart.length === 0) return "🛒 Keranjang Anda masih kosong.";
         let total = 0;
         let summary = "🛒 *KERANJANG ANDA* 🛒\n\n";
-        for(let i=0; i<session.cart.length; i++) {
-            const item = session.cart[i];
+        for(let i=0; i<cart.length; i++) {
+            const item = cart[i];
             const subtotal = item.price * item.qty;
             total += subtotal;
             summary += `${i+1}. ${item.name} x${item.qty} = Rp ${subtotal.toLocaleString()}\n`;
@@ -76,23 +88,33 @@ const handleIncomingMessage = async (from, text, tenantId) => {
     }
 
     if (session.stage === 'SELECT_PRODUCT') {
-        const choice = parseInt(text) - 1;
-        if (!isNaN(choice) && session.tempMenuMap[choice]) {
-            const product = await Product.findByPk(session.tempMenuMap[choice]);
-            if (!product) return "⚠️ Produk tidak ditemukan.";
+        // Handle input with multiplier (e.g., 3*5)
+        let choiceInput = text;
+        let quantity = 1;
 
-            let currentCart = [...(session.cart || [])];
-            const existingIdx = currentCart.findIndex(i => i.id === product.id);
+        if (text.includes('*')) {
+            const parts = text.split('*');
+            choiceInput = parts[0].trim();
+            quantity = parseInt(parts[1]) || 1;
+        }
+
+        const choice = parseInt(choiceInput) - 1;
+        
+        if (!isNaN(choice) && tempMenuMap[choice]) {
+            const product = await Product.findByPk(tempMenuMap[choice]);
+            if (!product) return "⚠️ Produk tidak ditemukan di database.";
+
+            const existingIdx = cart.findIndex(i => i.id === product.id);
             if (existingIdx > -1) {
-                currentCart[existingIdx].qty += 1;
+                cart[existingIdx].qty += quantity;
             } else {
-                currentCart.push({ id: product.id, name: product.name, price: product.price, qty: 1 });
+                cart.push({ id: product.id, name: product.name, price: product.price, qty: quantity });
             }
             
-            await session.update({ cart: currentCart, stage: 'ADD_MORE' });
-            return `✅ *${product.name}* ditambah!\n\nPilih *1* untuk tambah menu,\natau *2* untuk Checkout.`;
+            await session.update({ cart: cart, stage: 'ADD_MORE' });
+            return `✅ *${product.name}* (x${quantity}) ditambah ke keranjang!\n\nKetik *1* untuk tambah menu,\natau *2* untuk Checkout.`;
         }
-        return "⚠️ Pilih angka yang sesuai.";
+        return "⚠️ Pilih angka menu yang sesuai (contoh: 1 atau 1*5).";
     }
 
     if (session.stage === 'ADD_MORE') {
@@ -101,7 +123,7 @@ const handleIncomingMessage = async (from, text, tenantId) => {
         } else if (text === '2') {
             let total = 0;
             let summary = "📄 *RINGKASAN ORDER* 📄\n\n";
-            session.cart.forEach((item, index) => {
+            cart.forEach((item, index) => {
                 total += item.price * item.qty;
                 summary += `${index + 1}. ${item.name} x${item.qty} = Rp ${(item.price * item.qty).toLocaleString()}\n`;
             });
@@ -114,12 +136,12 @@ const handleIncomingMessage = async (from, text, tenantId) => {
 
     if (session.stage === 'ASKING_ADDRESS') {
         let total = 0;
-        session.cart.forEach(item => total += item.price * item.qty);
+        cart.forEach(item => total += item.price * item.qty);
 
         const newOrder = await Order.create({
             tenant_id: tenantId,
             customer_phone: from,
-            items: session.cart,
+            items: cart,
             total_price: total,
             address: text,
             status: 'pending'
